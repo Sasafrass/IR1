@@ -1,0 +1,12 @@
+Compute_df function:
+	-> What to return?
+TF-IDF scores:
+	-> Sum the individual scores per word?
+Query Likelihood Model
+	-> What is the problem? What is the second implementation?
+IDF for BM25?
+	-> Use old one or make new one
+average_precision:
+	-> MUST we use recall_k?
+score_to_prob:
+	-> how to calculate the actual probabilities?
