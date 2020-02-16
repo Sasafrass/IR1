@@ -1,12 +1,33 @@
 Compute_df function:
 	-> What to return?
+
+	-> Don't divide by N?
+	-> 7.6 7 5.4 4.3 4.3
+
 TF-IDF scores:
 	-> Sum the individual scores per word?
+
+	-> They sum the scores
+
 Query Likelihood Model
 	-> What is the problem? What is the second implementation?
+
+	-> They get -1.6 scores for naive ql?
+x
+	-> Answer: Still use some kind of score for the non-naive implementation instead 
+		of negative infinity?
+
 IDF for BM25?
 	-> Use old one or make new one
+
+	-> 
+
 average_precision:
 	-> MUST we use recall_k?
+
+	-> 
+
 score_to_prob:
 	-> how to calculate the actual probabilities?
+
+	-> 
