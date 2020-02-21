@@ -131,6 +131,8 @@ dmypy.json
 # Big files
 *.pt
 *.pth
+processed_docs.pkl
+*.pkl
 
 # No vscode files
 .vscode/*
