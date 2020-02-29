@@ -162,3 +162,6 @@ HW2/LSI/lsi_tf_model.index.index.npy
 HW2/LSI/lsi_tf_model.model
 HW2/LSI/lsi_tf_model.model.projection
 HW2/LSI/lsi_tf_model.model.projection.u.npy
+HW2/tf-idf.json
+HW2/tf-idf_76-100.json
+HW2/tfidf_index

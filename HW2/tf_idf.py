@@ -70,7 +70,7 @@ class TfIdfRetrieval():
 
         results = list(results.items())
         results.sort(key=lambda _: -_[1])
-        return results
+        return results #Return a high-to-low sorted list of tuples of doc-name and score
 
 
 if __name__ == "__main__":
@@ -85,16 +85,23 @@ if __name__ == "__main__":
     # read in the qrels
     qrels, queries = read_ap.read_qrels()
 
-    overall_ser = {}
+    partition = dict()
+    indices = list(qrels.keys())[76:101]
+    for index in range(len(indices)):
+        partition[indices[index]] = qrels[indices[index]]
 
     print("Running TFIDF Benchmark")
     # collect results
+    
+    overall_ser = {}
     for qid in tqdm(qrels): 
         query_text = queries[qid]
 
         results = tfidf_search.search(query_text)
-        overall_ser[qid] = dict(results)
-    
+        overall_ser[qid] = dict(results)    # a dictionary of dictionaries, 
+                                            # where the second dictionary maps doc names to scores, 
+                                            # and the first dictionary has query ids as keys
+                                            
     # run evaluation with `qrels` as the ground truth relevance judgements
     # here, we are measuring MAP and NDCG, but this can be changed to 
     # whatever you prefer
