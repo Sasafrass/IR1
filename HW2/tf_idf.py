@@ -13,6 +13,7 @@ import download_ap
 
 
 def print_results(docs, query, n_docs_limit=10, len_limit=50):
+    #print "hoi" 
     print(f"Query: {query}")
     docs = docs[:n_docs_limit]
     for i, (doc_id, score) in enumerate(docs):
@@ -71,7 +72,6 @@ class TfIdfRetrieval():
         results = list(results.items())
         results.sort(key=lambda _: -_[1])
         return results
-
 
 if __name__ == "__main__":
 
