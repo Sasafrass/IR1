@@ -32,3 +32,13 @@ class SkipGramNet(nn.Module):
         neg_score = F.logsigmoid(-neg_score)
 
         return -1 * (torch.sum(pos_score) + torch.sum(neg_score))
+
+
+    def save_embedding(self, i2w, file_name='word_vectors.csv'):
+            
+            embedding = self.w1.weight.data.numpy()
+            fout = open(file_name, 'w', encoding='utf-8')
+            for wid, w in i2w.items():
+                e = embedding[int(wid)]
+                e = ' '.join(map(lambda x: str(x), e))
+                fout.write('%s %s\n' % (w, e))
