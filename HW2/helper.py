@@ -22,7 +22,7 @@ def build_dicts(docs_by_id):
     vocab = set()
     index = 1
     w2i['<UNK>'] = 0
-    i2w[0] = ['<UNK>']
+    i2w[0] = '<UNK>'
     for word, count in counts.items():
         if(count >= 50 ):
             w2i[word] = index
