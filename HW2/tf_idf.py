@@ -99,8 +99,9 @@ if __name__ == "__main__":
 
         results = tfidf_search.search(query_text)
         overall_ser[qid] = dict(results)    # a dictionary of dictionaries, 
-                                            # where the second dictionary maps doc names to scores, 
-                                            # and the first dictionary has query ids as keys
+                                            # the first dictionary has query ids as keys,
+                                            # and the second dictionary maps doc names to np.float64 scores, 
+                                            
                                             
     # run evaluation with `qrels` as the ground truth relevance judgements
     # here, we are measuring MAP and NDCG, but this can be changed to 

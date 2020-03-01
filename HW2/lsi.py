@@ -22,6 +22,7 @@ import download_ap
 class LSIRetrieval():
     def __init__(self, docs, topic_number=500):
         # Create a dictionary representation of the documents.
+        print('training LSI models with topic number = ' + str(topic_number))
         if(not os.path.isfile('./lsi/lsi_dict.dict')):
             print('creating dict')
             dictionary = Dictionary(docs)
@@ -41,12 +42,11 @@ class LSIRetrieval():
         else:
             print('bow corpus already exists')
             corpus = MmCorpus("./lsi/lsi_corpus.mm")
-        self.corpus = corpus
 
+        self.tfidf = models.TfidfModel(corpus)
         if(not os.path.isfile('./lsi/lsi_tf_corpus.mm')):
             print('creating tf corpus')
-            tfidf = models.TfidfModel(corpus)
-            tf_corp = tfidf[corpus]
+            tf_corp = self.tfidf[corpus]
             MmCorpus.serialize("lsi/lsi_tf_corpus.mm", tf_corp)
         else:
             print('tf corpus already exists')
@@ -57,43 +57,43 @@ class LSIRetrieval():
         id2word = dictionary.id2token
 
         #Create the models and vectors
-        if(not os.path.isfile('./lsi/lsi_bow_model.model')):
+        if(not os.path.isfile('./lsi/lsi_bow_model' + str(topic_number) + '.model')):
             print('creating bow model')
             bow_model = models.LsiModel(corpus=corpus, num_topics = topic_number, id2word=id2word)
-            bow_model.save('lsi/lsi_bow_model.model')
+            bow_model.save('lsi/lsi_bow_model' + str(topic_number) + '.model')
         else:
             print('bow model already exists')
-            bow_model = models.LsiModel.load('./lsi/lsi_bow_model.model')
+            bow_model = models.LsiModel.load('./lsi/lsi_bow_model' + str(topic_number) + '.model')
         bow_vector = bow_model[corpus]
         self.bow_model = bow_model
 
-        if(not os.path.isfile('./lsi/lsi_tf_model.model')):
+        if(not os.path.isfile('./lsi/lsi_tf_model' + str(topic_number) + '.model')):
             print('creating tfidf model')
-            tf_model = models.LsiModel(corpus=tf_corp, num_topics = num_topics, id2word=id2word)
-            tf_model.save('./lsi/lsi_tf_model.model')
+            tf_model = models.LsiModel(corpus=tf_corp, num_topics = topic_number, id2word=id2word)
+            tf_model.save('./lsi/lsi_tf_model' + str(topic_number) + '.model')
         else:
             print('tfidf model already exists')
-            tf_model = models.LsiModel.load('./lsi/lsi_tf_model.model')
+            tf_model = models.LsiModel.load('./lsi/lsi_tf_model' + str(topic_number) + '.model')
         tf_vector = tf_model[tf_corp]
         self.tf_model = tf_model
 
         #Create indices
-        if(not os.path.isfile('./lsi/lsi_bow_model.index')):
+        if(not os.path.isfile('./lsi/lsi_bow_model' + str(topic_number) + '.index')):
             print('creating bow index')
             bow_index = similarities.MatrixSimilarity(bow_vector)  # index corpus in bow LSI space
-            bow_index.save('lsi/lsi_bow_model.index')
+            bow_index.save('lsi/lsi_bow_model' + str(topic_number) + '.index')
         else:
             print('bow index already exists')
-            bow_index = similarities.MatrixSimilarity.load('./lsi/lsi_bow_model.index')
+            bow_index = similarities.MatrixSimilarity.load('./lsi/lsi_bow_model' + str(topic_number) + '.index')
         self.bow_index = bow_index
 
-        if(not os.path.isfile('./lsi/lsi_tf_model.index')):
+        if(not os.path.isfile('./lsi/lsi_tf_model' + str(topic_number) + '.index')):
             print('creating tf index')
             tf_index = similarities.MatrixSimilarity(tf_vector)  # index corpus in tf LSI space
-            tf_index.save('lsi/lsi_tf_model.index')
+            tf_index.save('lsi/lsi_tf_model' + str(topic_number) + '.index')
         else:
             print('tf index already exists')
-            tf_index = similarities.MatrixSimilarity.load('./lsi/lsi_tf_model.index')
+            tf_index = similarities.MatrixSimilarity.load('./lsi/lsi_tf_model' + str(topic_number) + '.index')
         self.tf_index = tf_index
         print('model created!')
 
@@ -101,12 +101,12 @@ class LSIRetrieval():
         
         print('preprocessing queries')
         query_ids = list(queries.keys())
+
         #Transform queries into the LSI spaces
         q_bow_vec = [self.dictionary.doc2bow(q.lower().split()) for q in queries]
         bow_queries = self.bow_model[q_bow_vec]    
 
-        q_tfidf = models.TfidfModel(self.corpus)    #create a tfidf model based on the corpus
-        q_tf_vec = q_tfidf[q_bow_vec]               #transform the bow query vectors to tfidf vectors
+        q_tf_vec = self.tfidf[q_bow_vec]            #transform the bow query vectors to tfidf vectors
         tf_queries = self.tf_model[q_tf_vec]        #transform the tfidf vectors to vectors in the LSI model's space
         
         #Find documents that match the queries
@@ -119,7 +119,7 @@ class LSIRetrieval():
             bow_sims = self.bow_index[query]
             keys = list(docs_by_id.keys())
             for j in range(len(keys)):
-                results[keys[j]] = bow_sims[j]
+                results[keys[j]] = np.float64(bow_sims[j])
             results = {k: v for k, v in sorted(results.items(), key=lambda item: item[1], reverse=True)}
             bow_results[query_ids[i]] = results
 
@@ -132,10 +132,33 @@ class LSIRetrieval():
                 results[keys[j]] = np.float64(tf_sims[j])
             results = {k: v for k, v in sorted(results.items(), key=lambda item: item[1], reverse=True)}
             tf_results[query_ids[i]] = results
-        print(tf_results['101']['AP880222-0073'])
-        print(type(tf_results['101']['AP880222-0073']))
         return bow_results, tf_results
 
+    def search_single(self, query, docs_by_id):
+
+        #Transform queries into the LSI spaces
+        q_bow_vec = self.dictionary.doc2bow(query.lower().split())
+        bow_query = self.bow_model[q_bow_vec]    
+
+        q_tf_vec = self.tfidf[q_bow_vec]            #transform the bow query vector to tfidf vector
+        tf_query = self.tf_model[q_tf_vec]          #transform the tfidf vector to vectors in the LSI model's space
+        
+        keys = list(docs_by_id.keys())
+
+        #Find documents that match the query
+        bow_result = {}
+        bow_sims = self.bow_index[bow_query]
+        for j in range(len(keys)):
+            bow_result[keys[j]] = bow_sims[j]
+        bow_result = {k: v for k, v in sorted(bow_result.items(), key=lambda item: item[1], reverse=True)}
+
+        tf_result = {}
+        tf_sims = self.tf_index[tf_query]
+        for j in range(len(keys)):
+            tf_result[keys[j]] = np.float64(tf_sims[j])
+        tf_result = {k: v for k, v in sorted(tf_result.items(), key=lambda item: item[1], reverse=True)}
+
+        return bow_result, tf_result
 if __name__ == "__main__":
     # Make sure we have the dataset
     download_ap.download_dataset()
@@ -149,7 +172,9 @@ if __name__ == "__main__":
     # Bag-of-words representation of the documents.
     docs = [doc for key, doc in docs_by_id.items()]
 
-    lsi_search = LSIRetrieval(docs)
+    topic_number = 1000
+    
+    lsi_search = LSIRetrieval(docs,topic_number=topic_number)
 
     bow_results, tf_results = lsi_search.search(queries, docs_by_id)
 
@@ -159,7 +184,7 @@ if __name__ == "__main__":
 
     # dump this to JSON
     # *Not* Optional - This is submitted in the assignment!
-    with open("lsi_bow.json", "w") as writer:
+    with open("lsi_bow" + str(topic_number) + ".json", "w") as writer:
         json.dump(metrics, writer, indent=1)
 
     print('evaluating tf results')
@@ -167,5 +192,5 @@ if __name__ == "__main__":
 
     # dump this to JSON
     # *Not* Optional - This is submitted in the assignment!
-    with open("lsi_tf.json", "w") as writer:
+    with open("lsi_tf" + str(topic_number) + ".json", "w") as writer:
         json.dump(metrics, writer, indent=1)
