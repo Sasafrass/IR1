@@ -165,3 +165,12 @@ HW2/LSI/lsi_tf_model.model.projection.u.npy
 HW2/tf-idf.json
 HW2/tf-idf_76-100.json
 HW2/tfidf_index
+HW2/LSI/lsi_bow_model10.model
+HW2/LSI/lsi_bow_model10.index
+HW2/LSI/lsi_bow_model10.model.projection
+HW2/LSI/lsi_tf_model10.index
+HW2/LSI/lsi_tf_model10.model
+HW2/LSI/lsi_tf_model10.model.projection
+HW2/tempemb5_200.csv
+HW2/lsi_trec.txt
+HW2/word2vec_trec.txt

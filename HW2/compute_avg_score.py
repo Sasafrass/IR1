@@ -28,7 +28,7 @@ if __name__ == "__main__":
     parser.add_argument('--measure', type=str, default='map', help="Measure the results were evaluated with (map/ndcg)")
     parser.add_argument('--queries', type=str, default='all', help="Number of queries to consider (all/25)")
     args = parser.parse_args()
-    path = args.json1
+    path = args.json
     queries = args.queries
     measure = args.measure
     compute_avg(path,queries,measure)
