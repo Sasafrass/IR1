@@ -134,31 +134,7 @@ class LSIRetrieval():
             tf_results[query_ids[i]] = results
         return bow_results, tf_results
 
-    def search_single(self, query, docs_by_id):
 
-        #Transform queries into the LSI spaces
-        q_bow_vec = self.dictionary.doc2bow(query.lower().split())
-        bow_query = self.bow_model[q_bow_vec]    
-
-        q_tf_vec = self.tfidf[q_bow_vec]            #transform the bow query vector to tfidf vector
-        tf_query = self.tf_model[q_tf_vec]          #transform the tfidf vector to vectors in the LSI model's space
-        
-        keys = list(docs_by_id.keys())
-
-        #Find documents that match the query
-        bow_result = {}
-        bow_sims = self.bow_index[bow_query]
-        for j in range(len(keys)):
-            bow_result[keys[j]] = bow_sims[j]
-        bow_result = {k: v for k, v in sorted(bow_result.items(), key=lambda item: item[1], reverse=True)}
-
-        tf_result = {}
-        tf_sims = self.tf_index[tf_query]
-        for j in range(len(keys)):
-            tf_result[keys[j]] = np.float64(tf_sims[j])
-        tf_result = {k: v for k, v in sorted(tf_result.items(), key=lambda item: item[1], reverse=True)}
-
-        return bow_result, tf_result
 if __name__ == "__main__":
     # Make sure we have the dataset
     download_ap.download_dataset()
@@ -172,7 +148,7 @@ if __name__ == "__main__":
     # Bag-of-words representation of the documents.
     docs = [doc for key, doc in docs_by_id.items()]
 
-    topic_number = 1000
+    topic_number = 10
     
     lsi_search = LSIRetrieval(docs,topic_number=topic_number)
 
@@ -184,13 +160,24 @@ if __name__ == "__main__":
 
     # dump this to JSON
     # *Not* Optional - This is submitted in the assignment!
-    with open("lsi_bow" + str(topic_number) + ".json", "w") as writer:
-        json.dump(metrics, writer, indent=1)
+    # with open("lsi_bow" + str(topic_number) + ".json", "w") as writer:
+    #     json.dump(metrics, writer, indent=1)
 
     print('evaluating tf results')
     metrics = evaluator.evaluate(tf_results)
 
     # dump this to JSON
     # *Not* Optional - This is submitted in the assignment!
-    with open("lsi_tf" + str(topic_number) + ".json", "w") as writer:
-        json.dump(metrics, writer, indent=1)
+    # with open("lsi_tf" + str(topic_number) + ".json", "w") as writer:
+    #     json.dump(metrics, writer, indent=1)
+
+    print('writing results')
+    results = tf_results
+    q_keys = list(queries.keys())
+    f= open("lsi_trec.txt","w+")
+    for i, query in enumerate(q_keys):
+        ordered_doc_names = list(results[query].keys())
+        for j, doc in enumerate(ordered_doc_names):
+            if(j == 1000):
+                break
+            f.write(query + ' Q0 ' + doc + " " + str(j+1) + " " + str(results[query][doc]) + ' STANDARD\n')
