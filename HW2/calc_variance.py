@@ -37,8 +37,13 @@ def main():
     scores = [first_scores, second_scores, third_scores, fourth_scores]
     matrix = np.array(scores)
     variances = np.var(matrix,axis=0)
-    variances = np.flip(np.sort(variances))
+    variances = list(variances)
+    #variances = np.flip(np.sort(variances))
+    # variances = list(variances)
+    ids = [x for _,x in sorted(zip(variances,query_ids),reverse=True)]
+    variances = sorted(variances,reverse=True)
 
+    print(ids[0:5])
     print(variances[0:5])
 
 if __name__ == "__main__":
