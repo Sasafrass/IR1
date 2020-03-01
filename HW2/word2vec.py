@@ -1,11 +1,12 @@
 import os
 import pickle as pkl
 import json
-
+from random import randrange
 # np and torch stuff
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 from torch.nn.functional import one_hot
 
 # To read the files and qrels
@@ -26,25 +27,37 @@ def run_epoch(model, window_size, docs_by_id, w2i, i2w, ce, optimizer):
     len_vocab = len(w2i)
 
     for key, doc in docs_by_id.items():
-        for i in range(2, len(doc)-2):
-            context = one_hot(torch.tensor(w2i[doc[i]]), len_vocab)
+        total_loss = 0
+        for i in range(window_size, len(doc)-window_size):
+            context_word = torch.tensor(w2i[doc[i]]) if doc[i] in w2i else torch.tensor(0)
+            context = one_hot(context_word, len_vocab)
             context = context.float()
-            targets = [torch.tensor(w2i[doc[i-2]]), 
-                                            torch.tensor(w2i[doc[i-1]]), 
-                                            torch.tensor(w2i[doc[i+1]]), 
-                                            torch.tensor(w2i[doc[i+2]])]
+            targets = [torch.tensor(0) for i in range(window_size * 2)]
+            for j in range(1, window_size + 1):
+                targets[window_size-j] = torch.tensor(0) if doc[i-j] not in w2i else torch.tensor(w2i[doc[i-j]])
+                targets[window_size+j -1] = torch.tensor(0) if doc[i+j] not in w2i else torch.tensor(w2i[doc[i+j]])
+            
+            negative_samples = []
 
-            out = model.forward(context)
+            #generate 5 negative samples for every word combination
+            for j in range(len(targets)):
+                negative_samples.append([randrange(len_vocab) for x in range(5)])
 
-            # Do window_size 2 times and accumulate loss
-            loss = 0
-            for i in range(window_size * 2):
-                loss += ce(out.unsqueeze(0), targets[i].unsqueeze(0))
+            pos_samples = [context_word for x in range(len(targets))]            
+
+
+            optimizer.zero_grad()
+            loss = model.forward(
+                Variable(torch.LongTensor(pos_samples)),
+                Variable(torch.LongTensor(targets)),
+                Variable(torch.LongTensor(negative_samples))
+            )
 
             # Feed loss backward and zero grad the boii
             loss.backward()
             optimizer.step()
-            optimizer.zero_grad()
+            total_loss += loss
+        print('loss is:', total_loss.item()/i)
 
 if __name__ == "__main__":
 
@@ -69,7 +82,7 @@ if __name__ == "__main__":
     # Variables to give to skip gram function, window size on each side
     # Output dimension of vector
     num_epochs  = 1
-    window_size = 2
+    window_size = 5
     output_dim  = 300
     vocab_size  = len(w2i)
     model = SkipGramNet(vocab_size, output_dim).float()
@@ -77,7 +90,7 @@ if __name__ == "__main__":
     # lr, loss function and optimizer
     learning_rate = 0.01
     ce = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.SparseAdam(model.parameters(), lr=learning_rate)
 
     # Perform actual SkipGram training
     SkipGram(model, num_epochs, window_size, docs_by_id, w2i, i2w, ce, optimizer)
