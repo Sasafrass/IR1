@@ -52,12 +52,13 @@ def run_epoch(model, window_size, docs_by_id, w2i, i2w, ce, optimizer):
                 Variable(torch.LongTensor(targets)),
                 Variable(torch.LongTensor(negative_samples))
             )
-
             # Feed loss backward and zero grad the boii
             loss.backward()
             optimizer.step()
             total_loss += loss
+        model.save_embedding(i2w)
         print('loss is:', total_loss.item()/i)
+    model.save_embedding(i2w)
 
 if __name__ == "__main__":
 
