@@ -55,10 +55,10 @@ def run_epoch(model, window_size, docs_by_id, w2i, i2w, ce, optimizer):
             # Feed loss backward and zero grad the boii
             loss.backward()
             optimizer.step()
-            total_loss += loss
-        model.save_embedding(i2w)
-        print('loss is:', total_loss.item()/i)
-    model.save_embedding(i2w)
+            total_loss += loss.item()
+        model.save_embedding(i2w, filename+'.csv')
+        print('loss is: ', total_loss/i)
+    model.save_embedding(i2w, filename+'final.csv')
 
 if __name__ == "__main__":
 
@@ -83,9 +83,10 @@ if __name__ == "__main__":
     # Variables to give to skip gram function, window size on each side
     # Output dimension of vector
     num_epochs  = 1
-    window_size = 5
+    window_size = 10
     output_dim  = 300
     vocab_size  = len(w2i)
+    filename = '10300'
     model = SkipGramNet(vocab_size, output_dim).float()
 
     # lr, loss function and optimizer
