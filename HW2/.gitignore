@@ -146,3 +146,4 @@ processed_docs.pkl
 images/*
 models/*
 datasets/*
+.ipynb_checkpoints
