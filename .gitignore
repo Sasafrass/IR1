@@ -149,6 +149,7 @@ datasets/*
 dataset/*
 *.npz
 *.ipynb
+HW3/dataset/*
 HW2/LSI/lsi_bow_model.index
 HW2/LSI/lsi_bow_model.index.index.npy
 HW2/LSI/lsi_bow_model.model
