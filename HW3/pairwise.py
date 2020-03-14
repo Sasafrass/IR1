@@ -11,40 +11,123 @@ from models import RankNet
 from dataset import get_dataset, DataSet
 import ranking as rnk
 
+# Time functions
+import time
+
+# Evaluate model import
+from pointwise_evaluation import evaluate_model
+
 def run_epoch(model, optimizer, data):
-	overall_loss = 0
-	for i, qid in enumerate(np.arange(data.train.num_queries())):
-		optimizer.zero_grad()
-		qd_feats = data.train.query_feat(qid)
-		qd_labels = data.train.query_labels(qid)
-		scores = model.forward(torch.tensor(qd_feats).float().cuda())
-		
-		# TODO: Fix this spaghetti shit
-		ranking_boi = np.float64(scores.squeeze().cpu().detach().numpy())
-		if not isinstance(ranking_boi, np.ndarray):
-			ranking_boi = np.array([ranking_boi])
-			
-		ranking, inv_ranking = rnk.rank_and_invert(ranking_boi)
-		
-		loss = 0
-		
-		for s_i in ranking:
-			for s_j in ranking:
-				#Calc loss for S_ij
-				s_ij = np.sign(qd_labels[s_i]-qd_labels[s_j])
-				sigmoid_ij = torch.sigmoid(scores[s_i].float() - scores[s_j].float())
-				loss += (1/2) * (1-s_ij) * sigmoid_ij + torch.log(1 + torch.exp(-1*sigmoid_ij))
+    
+    # Parameters
+    overall_loss = 0
+    epoch_loss = 0
+    sigma = 1
+    
+    # Main Pairwise RankNet function
+    for i, qid in enumerate(np.arange(data.train.num_queries())):
 
-		overall_loss += loss / len(ranking) ** 2
+        # Zero the gradient buffer and get doc,query combinations, labels and scores
+        optimizer.zero_grad()
+        qd_feats = data.train.query_feat(qid)
+        qd_labels = data.train.query_labels(qid)
+        scores = model.forward(torch.tensor(qd_feats).float().cuda())
 
-		if((i+1)%1000 == 0):
-			print(overall_loss/1000)
-			overall_loss = 0
+        # Make em torchy?
+        qd_feats = torch.tensor(qd_feats).cuda()
+        qd_labels = torch.tensor(qd_labels).cuda()
 
-		loss.backward()
-		optimizer.step()
+        # TODO: Fix this spaghetti shit
+        ranking_boi = np.float64(scores.squeeze().cpu().detach().numpy())
+        
+        # Get the ranking 
+        if not isinstance(ranking_boi, np.ndarray):
+            ranking_boi = np.array([ranking_boi])
+        ranking, inv_ranking = rnk.rank_and_invert(ranking_boi)
+
+        ranking = torch.tensor(ranking.copy()).cuda()
+    
+        # Get rid of pesky 1-document queries and initialize loss
+        if len(scores) < 2:
+            continue
+
+        loss = 0
+
+        # Vectorize the loss calculation
+        # Calculate all score differences
+        scorediff = scores - scores.T
+
+        # Calculate all signs
+        squeeze_labels = qd_labels.unsqueeze(-1)
+        signs = torch.sign(squeeze_labels - qd_labels).float()
+
+        # Loss is just vectorized formula
+        # loss = (1/2) * (1-signs) * torch.sigmoid(scorediff) + torch.log(1 + torch.exp(-1 * sigma * scorediff))
+        loss = (1/2) * (1-signs) * sigma * scorediff + torch.log(1 + torch.exp(-1 * sigma * scorediff))
+        loss = loss.sum()
+
+        # Keep track of rolling average
+        overall_loss += loss / (len(ranking) ** 2)
+
+        # Print interesting stuff after X iterations
+        # num_iter = 1
+        # if((i+1)%num_iter == 0):
+        #     print(overall_loss/num_iter)
+        #     print(ranking)
+        #     print(qd_labels)
+        #     print(scores)
+        #     overall_loss = 0
+
+        num_batches = 1
+        if (i+1) % num_batches == 0:
+            avg_ndcg = evaluate_model(model, data.validation)
+            print("NCDG: ", avg_ndcg)
+
+        # Update gradients
+        loss.backward()
+        optimizer.step()
+
+        #break
+    
+    #
+    #print(ranking)
+
+    print(ranking)
+    print("epoch_loss: ", overall_loss / data.train.num_queries())
 
 	# TODO: Go over data.validation
+
+def validate_ndcg():
+    with torch.no_grad():
+
+        total_ndcg = 0
+
+        for i, qid in enumerate(np.arange(data.validation.num_queries())):
+            qd_feats = data.validation.query_feat(qid)
+            qd_labels = data.validation.query_labels(qid)
+            scores = model.forward(torch.tensor(qd_feats).float().cuda())
+
+            # Make em torchy?
+            qd_feats = torch.tensor(qd_feats).cuda()
+            qd_labels = torch.tensor(qd_labels).cuda()
+
+            # TODO: Fix this spaghetti shit
+            ranking_boi = np.float64(scores.squeeze().cpu().detach().numpy())
+            
+            # Get the ranking 
+            if not isinstance(ranking_boi, np.ndarray):
+                ranking_boi = np.array([ranking_boi])
+            ranking, inv_ranking = rnk.rank_and_invert(ranking_boi)
+
+            ranking = torch.tensor(ranking.copy()).cuda()
+        
+            # Get rid of pesky 1-document queries and initialize loss
+            if len(scores) < 2:
+                continue
+
+            total_ndcg += evaluate_model(model, data.validation)
+
+        return total_ndcg / data.validation.num_queries()
 
 if __name__ == "__main__":
 
@@ -73,7 +156,7 @@ if __name__ == "__main__":
 	print(f"\tNumber of queries {split.num_queries()}")
 
 	# Define number of epochs and run for that amount
-	num_epochs = 10
+	num_epochs = 100
 	for i in range(num_epochs):
 		print("Epoch: ", i)
 		run_epoch(model, optimizer, data)
