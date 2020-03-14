@@ -22,12 +22,10 @@ def run_epoch(model, optimizer, data):
     # Parameters
     overall_loss = 0
     epoch_loss = 0
-    sigma = 10
+    sigma = 1
     
     # Main Pairwise RankNet function
     for i, qid in enumerate(np.arange(data.train.num_queries())):
-
-        qid = 1
 
         # Zero the gradient buffer and get doc,query combinations, labels and scores
         optimizer.zero_grad()
@@ -48,9 +46,6 @@ def run_epoch(model, optimizer, data):
         ranking, inv_ranking = rnk.rank_and_invert(ranking_boi)
 
         ranking = torch.tensor(ranking.copy()).cuda()
-
-        # if qid == 1:
-        #     print("QID 1: ", ranking)
     
         # Get rid of pesky 1-document queries and initialize loss
         if len(scores) < 2:
@@ -74,29 +69,31 @@ def run_epoch(model, optimizer, data):
         # Keep track of rolling average
         overall_loss += loss / (len(ranking) ** 2)
 
-        # num_queries = 21000
-        # if (i+1) % num_queries == 0:
-        #     with torch.no_grad():
-        #         avg_ndcg = evaluate_model(model, data.validation)
-        #     print("NDCG: ", avg_ndcg)
-        #     print("LOSS: ", overall_loss)
+        # Print interesting stuff after X iterations
+        # num_iter = 1
+        # if((i+1)%num_iter == 0):
+        #     print(overall_loss/num_iter)
+        #     print(ranking)
+        #     print(qd_labels)
+        #     print(scores)
         #     overall_loss = 0
+
+        num_queries = 2500
+        if (i+1) % num_queries == 0:
+            with torch.no_grad():
+                avg_ndcg = evaluate_model(model, data.validation)
+            print("NDCG: ", avg_ndcg)
 
         # Update gradients
         loss.backward()
         optimizer.step()
 
         #break
-
-    with torch.no_grad():
-        avg_ndcg = evaluate_model(model, data.train, k = 5, regression = True)
-        print("NDCG: ", avg_ndcg)
-        print("LOSS: ", overall_loss)
-        overall_loss = 0
-
+    
     #
     #print(ranking)
 
+    print(ranking)
     print("epoch_loss: ", overall_loss / data.train.num_queries())
 
 	# TODO: Go over data.validation

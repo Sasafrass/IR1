@@ -20,8 +20,8 @@ def run_epoch(model, optimizer, data):
 		optimizer.zero_grad()
 		qd_feats = data.train.query_feat(qid)
 		qd_labels = data.train.query_labels(qid)
-		scores = model.forward(torch.tensor(qd_feats).float())
-		labels = torch.tensor(qd_labels)
+		scores = model.forward(torch.tensor(qd_feats).float().cuda())
+		labels = torch.tensor(qd_labels).cuda()
 		softmax = F.softmax(scores)
 		prediction = torch.argmax(softmax, dim=1)
 		corr = [1 if prediction[x] == labels[x] else 0 for x in range(len(prediction))]
@@ -55,7 +55,7 @@ if __name__ == "__main__":
 	output_size = data.num_rel_labels
 
 	# Define model
-	model = RankNet(input_size = input_size, output_size = output_size).float()
+	model = RankNet(input_size = input_size, output_size = output_size).float().cuda()
 	optimizer = optim.Adam(model.parameters(), lr=0.02)
 
 	# Define what split we are using FOR THE MODEL SO TRAIN OR NOT
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 		model.train
 		run_epoch(model, optimizer, data)
 		model.eval
-		ndcg_score = evaluate_model(model, data.test)
+		ndcg_score = evaluate_model(model, data.validation)
 		print('NDCG: ', ndcg_score)
 
 
