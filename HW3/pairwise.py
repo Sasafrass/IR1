@@ -163,6 +163,8 @@ def validate_ndcg():
 
 if __name__ == "__main__":
 
+    model_path = 'stored_models/pairwise_model.pth'
+
 	# Get data
 	dataset = get_dataset()
 	data = dataset.get_data_folds()[0]
@@ -192,3 +194,5 @@ if __name__ == "__main__":
 	for i in range(num_epochs):
 		print("Epoch: ", i)
 		run_epoch(model, optimizer, data, sped_up=True)
+
+    torch.save(model.state_dict(), model_path)
