@@ -13,6 +13,7 @@ import ranking as rnk
 
 # Time functions
 import time
+from datetime import datetime as time
 
 # Evaluate model import
 from pointwise_evaluation import evaluate_model
@@ -163,7 +164,7 @@ def validate_ndcg():
 
 if __name__ == "__main__":
 
-    model_path = 'stored_models/pairwise_model.pth'
+	model_path = 'stored_models/pairwise_model.pth'
 
 	# Get data
 	dataset = get_dataset()
@@ -193,6 +194,8 @@ if __name__ == "__main__":
 	num_epochs = 100
 	for i in range(num_epochs):
 		print("Epoch: ", i)
+		start = time.now()
 		run_epoch(model, optimizer, data, sped_up=True)
+		print("I'm done! This run lasted: " + str(time.now() - start))
 
-    torch.save(model.state_dict(), model_path)
+	torch.save(model.state_dict(), model_path)
