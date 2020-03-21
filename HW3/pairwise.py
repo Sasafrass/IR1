@@ -18,7 +18,7 @@ import time
 from pointwise_evaluation import evaluate_model
 
 def run_epoch(model, optimizer, data, eval_every=2500, sped_up=False, sigma=1):
-    # TODO: Ensure function calls have regression=True
+	
     # Parameters
     overall_loss = 0
     epoch_loss = 0
@@ -48,7 +48,7 @@ def run_epoch(model, optimizer, data, eval_every=2500, sped_up=False, sigma=1):
         overall_loss += loss / (len(ranking) ** 2)
 
         if (i+1) % eval_every == 0:
-            avg_ndcg = evaluate_model(model, data.validation)
+            avg_ndcg = evaluate_model(model, data.validation,regression=True)
             print("NCDG: ", avg_ndcg)
 
         # Update gradients
@@ -157,7 +157,7 @@ def validate_ndcg():
             if len(scores) < 2:
                 continue
 
-            total_ndcg += evaluate_model(model, data.validation)
+            total_ndcg += evaluate_model(model, data.validation,regression=True)
 
         return total_ndcg / data.validation.num_queries()
 

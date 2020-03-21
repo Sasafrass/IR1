@@ -98,7 +98,7 @@ def run_epoch(model, optimizer, data, eval_every=2500, sigma=1, IRM='err'):
         overall_loss += loss / (len(ranking) ** 2)
 
         if (i+1) % eval_every == 0:
-            avg_ndcg = evaluate_model(model, data.validation)
+            avg_ndcg = evaluate_model(model, data.validation,regression=True)
             print("NCDG: ", avg_ndcg)
 
         # Update gradients
@@ -143,7 +143,7 @@ def validate_ndcg():
             if len(scores) < 2:
                 continue
 
-            total_ndcg += evaluate_model(model, data.validation)
+            total_ndcg += evaluate_model(model, data.validation,regression=True)
 
         return total_ndcg / data.validation.num_queries()
 
