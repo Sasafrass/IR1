@@ -168,6 +168,10 @@ def ndcg(ranking,ideal_ranking):
 	ideal_dcg_nom = 2 ** ideal_ranking-1.
 	ideal_dcg = np.sum(ideal_dcg_nom * denom)
 
+	if(ideal_dcg == 0):
+		# All labels are 0, so the order is irrelevant
+		return np.ones(dcg.shape[0])
+
 	return dcg / ideal_dcg
 
 if __name__ == "__main__":
