@@ -29,10 +29,10 @@
     * [ ] Analysis Question 4.2
 
 * [ ] **Programming**
-  * [ ] **2 - Pointwise - LTR**
+  * [x] **2 - Pointwise - LTR**
     * [x] Training a pointwise model
     * [x] Function to evaluate the Pointwise model
-    * [ ] Hyperparameter search and early stopping using validation set
+    * [x] Hyperparameter search and early stopping using validation set
     * [ ] (Report) optimal hyperparameters for Pointwise model
     * [ ] (Report) performance on test set
   * [ ] **3- Pairwise - LTR**
@@ -43,14 +43,14 @@
     * [ ] (Report) optimal hyperparameters for RankNet
     * [ ] (Report) performance on test set
   * [ ] **3b - RankNet: Sped up**
-    * [ ] Implementation of Sped up RankNet
+    * [x] Implementation of Sped up RankNet
     * [ ] (Report) Optimal hyperparameters for Sped-up RankNet
     * [ ] (Report) Performance on test set
   * [ ] **4 - Listwise LTR**
-    * [ ] Implementation of $\delta$ERR
+    * [x] Implementation of $\delta$ERR
     * [ ] Implementation of $\delta$nDCG
-    * [ ] Implementation of LambdaRank (IR Measure should be a hyperparameter)
-    * [ ] Function to train LambdaRank
+    * [x] Implementation of LambdaRank (IR Measure should be a hyperparameter)
+    * [x] Function to train LambdaRank
     * [ ] Function to evaluate LambdaRank
     * [ ] Hyperparameter search and early stopping using the validation set
     * [ ] (Report) Optimal hyperparameters for LambdaRank (using both ERR and
