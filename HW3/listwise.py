@@ -17,7 +17,7 @@ import time
 # Evaluate model import
 from pointwise_evaluation import evaluate_model
 
-def run_epoch(model, optimizer, data, eval_every=2500, sigma=1, IRM='err'):
+def run_epoch(model, optimizer, data, eval_every=2500, sigma=1, IRM='ndcg'):
     
     # Parameters
     overall_loss = 0
