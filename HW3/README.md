@@ -22,8 +22,7 @@
     * [ ] Analysis Question 2.1
     * [ ] Analysis Question 2.2
   * [ ] **3 - Pairwise LTR**
-    * [ ] Analysis Question 3.1
-        * [x] Albert
+    * [x] Analysis Question 3.1
     * [ ] Analysis Question 3.2
   * [ ] **4 - Listwise LTR**
     * [ ] Analysis Question 4.1
