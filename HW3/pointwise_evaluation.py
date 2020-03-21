@@ -15,10 +15,10 @@ def evaluate_model(model, validation_set):
     for qid in np.arange(validation_set.num_queries()):
         qd_feats = validation_set.query_feat(qid)
         qd_labels = validation_set.query_labels(qid)
-        scores = model.forward(torch.tensor(qd_feats).float())
+        scores = model.forward(torch.tensor(qd_feats).float().cuda())
         labels = torch.tensor(qd_labels)
-        softmax = F.softmax(scores)
-        prediction = torch.argmax(softmax, dim=1)
+        softmax = F.softmax(scores,dim=0)
+        prediction = torch.argmax(softmax, dim=1).cpu()
 
         pred_rank, _ = rnk.rank_and_invert(prediction)
         label_rank, _ = rnk.rank_and_invert(labels)
