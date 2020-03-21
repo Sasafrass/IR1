@@ -20,8 +20,8 @@ def run_epoch(model, optimizer, data):
 		optimizer.zero_grad()
 		qd_feats = data.train.query_feat(qid)
 		qd_labels = data.train.query_labels(qid)
-		scores = model.forward(torch.tensor(qd_feats).float())
-		labels = torch.tensor(qd_labels)
+		scores = model.forward(torch.tensor(qd_feats).float().cuda())
+		labels = torch.tensor(qd_labels).cuda()
 		softmax = F.softmax(scores)
 		prediction = torch.argmax(softmax, dim=1)
 		corr = [1 if prediction[x] == labels[x] else 0 for x in range(len(prediction))]
@@ -38,7 +38,8 @@ def run_epoch(model, optimizer, data):
 if __name__ == "__main__":
 
 	model_path = 'stored_models/pointwise_model.pth'
-	num_epochs = 10
+	num_epochs = 100
+	stop_threshold = 0.00001
 
 	# Get data
 	dataset = get_dataset()
@@ -55,8 +56,8 @@ if __name__ == "__main__":
 	output_size = data.num_rel_labels
 
 	# Define model
-	model = RankNet(input_size = input_size, output_size = output_size).float()
-	optimizer = optim.Adam(model.parameters(), lr=0.02)
+	model = RankNet(input_size = input_size, output_size = output_size).float().cuda()
+	optimizer = optim.Adam(model.parameters(), lr=0.002)
 
 	# Define what split we are using FOR THE MODEL SO TRAIN OR NOT
 	split = "train" #"validation", "test"
@@ -64,13 +65,21 @@ if __name__ == "__main__":
 	split = getattr(data, split)
 	print(f"\tNumber of queries {split.num_queries()}")
 
+	prev_ndcg_score = 0
+
 	# Define number of epochs and run for that amount
 	for i in range(num_epochs):
 		model.train
 		run_epoch(model, optimizer, data)
 		model.eval
-		ndcg_score = evaluate_model(model, data.test)
+		ndcg_score = evaluate_model(model, data.validation)
 		print('NDCG: ', ndcg_score)
 
+		diff = abs(ndcg_score - prev_ndcg_score)
+		print(diff)
+		if ( diff < stop_threshold):
+			print('Early stopping')
+			break
+		prev_ndcg_score = ndcg_score
 
 	torch.save(model.state_dict(), model_path)
