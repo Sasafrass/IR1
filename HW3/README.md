@@ -6,6 +6,9 @@
 
 * [x] Make LaTeX file 
   * [x] Albert
+* [ ] Implementation Details Pointwise
+* [ ] Implementation Details Pairwise
+* [ ] Implementation Details LambdaRank
 * [x] **Theory Questions:** 
   * [x] Theory Question 1.1
   * [x] Theory Question 1.2
@@ -27,7 +30,6 @@
   * [ ] **4 - Listwise LTR**
     * [ ] Analysis Question 4.1
     * [ ] Analysis Question 4.2
-
 * [ ] **Programming**
   * [ ] **2 - Pointwise - LTR**
     * [x] Training a pointwise model
