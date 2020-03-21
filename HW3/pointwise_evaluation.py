@@ -44,11 +44,11 @@ if __name__ == "__main__":
     output_size = data.num_rel_labels
 
     # Define model
-    model = RankNet(input_size = input_size, output_size = output_size).float()
+    model = RankNet(input_size = input_size, output_size = output_size).float().cuda()
     model.load_state_dict(torch.load(model_path))
 
 
     # data.train is a DataFoldSplit
-    print("data.train:", data.validation)
-    ndcg_score = evaluate_model(model, data.validation)
+    print("data.train:", data.test)
+    ndcg_score = evaluate_model(model, data.test)
     print('NDCG: ', ndcg_score)
