@@ -18,7 +18,7 @@ import time
 from pointwise_evaluation import evaluate_model
 
 def run_epoch(model, optimizer, data, eval_every=2500, sped_up=False, sigma=1):
-    
+    # TODO: Ensure function calls have regression=True
     # Parameters
     overall_loss = 0
     epoch_loss = 0

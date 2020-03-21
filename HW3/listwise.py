@@ -17,8 +17,8 @@ import time
 # Evaluate model import
 from pointwise_evaluation import evaluate_model
 
-def run_epoch(model, optimizer, data, eval_every=2500, sigma=1):
-    
+def run_epoch(model, optimizer, data, eval_every=2500, sigma=1, IRM='err'):
+    # TODO: Ensure function calls have regression=True
     # Parameters
     overall_loss = 0
     epoch_loss = 0
@@ -62,8 +62,34 @@ def run_epoch(model, optimizer, data, eval_every=2500, sigma=1):
 
         # Loss is just vectorized formula
         lambdas_ij = sigma * ((1 / 2) * (1 - scorediff) - (1 / (1 + torch.exp(sigma * scorediff))))
+
         # TODO: Calc IRM
-        # lambdas_ij = lambdas_ij * IRM
+        np_labels = qd_labels.cpu().numpy()
+        np_ranking = ranking.cpu().numpy()
+        pred_perms = []
+        sorted_pred = np.array([np_labels[idx] for idx in np_ranking])
+        pred_perms.append(sorted_pred)
+
+        for p in range(len(sorted_pred)):
+            for q in range(p+1, len(sorted_pred)):
+                perm_pred = sorted_pred.copy()
+                temp = sorted_pred[p] 
+                perm_pred[p] = sorted_pred[q]
+                perm_pred[q] = temp
+                pred_perms.append(perm_pred)
+        pred_perms = np.array(pred_perms)
+
+        if(IRM == 'err'):
+            ranking_measure = err(pred_perms)
+        elif(IRM == 'ndcg'):
+            ranking_measure = 0
+
+        deltas = np.abs(ranking_measure[0] - ranking_measure[1:])
+        delta_irm = np.zeros((len(ranking), len(ranking)))
+        delta_irm[np.triu_indices(len(ranking), 1)] = deltas
+        delta_irm = torch.from_numpy(delta_irm + delta_irm.T).float().cuda()
+
+        lambdas_ij = lambdas_ij * delta_irm
         lambas_i = lambdas_ij.sum(dim=1)
         loss = scores.squeeze() * lambas_i
         loss = loss.sum()
@@ -121,6 +147,16 @@ def validate_ndcg():
 
         return total_ndcg / data.validation.num_queries()
 
+def err(ranking):
+    p = np.ones(ranking.shape[0])
+    err = 0
+    max_score = np.max(ranking)
+    for r in range(ranking.shape[1]):
+        rel_prob = (2 ** ranking[:,r] - 1) / 2 ** max_score
+        err = err + p * rel_prob/(r+1)
+        p *= (1 - rel_prob)
+    return err
+
 if __name__ == "__main__":
 
 	# Get data
@@ -151,4 +187,4 @@ if __name__ == "__main__":
 	num_epochs = 100
 	for i in range(num_epochs):
 		print("Epoch: ", i)
-		run_epoch(model, optimizer, data, sped_up=True)
+		run_epoch(model, optimizer, data)
