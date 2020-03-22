@@ -18,7 +18,7 @@ from datetime import datetime as time
 # Evaluate model import
 from pointwise_evaluation import evaluate_model
 
-def run_epoch(model, optimizer, data, eval_every=2500, sigma=1, IRM='ndcg'):
+def run_epoch(model, optimizer, data, validate_every=2500, sigma=1, IRM='ndcg'):
     
 	# Parameters
 	overall_loss = 0
@@ -64,7 +64,7 @@ def run_epoch(model, optimizer, data, eval_every=2500, sigma=1, IRM='ndcg'):
 		# Loss is just vectorized formula
 		lambdas_ij = sigma * ((1 / 2) * (1 - scorediff) - (1 / (1 + torch.exp(sigma * scorediff))))
 
-		# TODO: Calc IRM
+		# Calculate the delta IRM
 		np_labels = qd_labels.cpu().numpy()
 		np_ranking = ranking.cpu().numpy()
 		pred_perms = []
@@ -91,6 +91,8 @@ def run_epoch(model, optimizer, data, eval_every=2500, sigma=1, IRM='ndcg'):
 		delta_irm[np.triu_indices(len(ranking), 1)] = deltas
 		delta_irm = torch.from_numpy(delta_irm + delta_irm.T).float().cuda()
 
+		# Calculate the loss
+
 		lambdas_ij = lambdas_ij * delta_irm
 		lambas_i = lambdas_ij.sum(dim=1)
 		loss = scores.squeeze() * lambas_i
@@ -99,7 +101,7 @@ def run_epoch(model, optimizer, data, eval_every=2500, sigma=1, IRM='ndcg'):
 		# Keep track of rolling average
 		overall_loss += loss / (len(ranking) ** 2)
 
-		if (i+1) % eval_every == 0:
+		if (i+1) % validate_every == 0:
 			avg_ndcg = evaluate_model(model, data.validation,regression=True)
 			print("NCDG: ", avg_ndcg)
 
