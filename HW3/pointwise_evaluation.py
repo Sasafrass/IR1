@@ -58,7 +58,13 @@ def evaluate_model(model, validation_set, k = 5, regression = False):
 
 if __name__ == "__main__":
 
-    model_path = './stored_models/pointwise_model.pth'
+    pointwise = './stored_models/pointwise_model.pth'
+    listwise_score = './stored_models/listwise_model.pth'
+    listwise_err = './stored_models/listwise_modelerr.pth'
+    pairwise_speed = './stored_models/pairwise_model.pth'
+    pairwise = './stored_models/pairwise_model_notspedup.pth'
+
+
     # Get data
     dataset = get_dataset()
     data = dataset.get_data_folds()[0]
@@ -70,11 +76,36 @@ if __name__ == "__main__":
     output_size = data.num_rel_labels
 
     # Define model
-    model = RankNet(input_size = input_size, output_size = output_size).float().cuda()
-    model.load_state_dict(torch.load(model_path))
+    pointwise_model = RankNet(input_size = input_size, output_size = output_size).float().cuda()
+    pointwise_model.load_state_dict(torch.load(pointwise))
 
+    pairwise_speed_model = RankNet(input_size = input_size, output_size = 1).float().cuda()
+    pairwise_speed_model.load_state_dict(torch.load(pairwise_speed))
+
+    pairwise_model = RankNet(input_size = input_size, output_size = 1).float().cuda()
+    pairwise_model.load_state_dict(torch.load(pairwise))
+
+    listwise_score_model = RankNet(input_size = input_size, output_size = 1).float().cuda()
+    listwise_score_model.load_state_dict(torch.load(listwise_score))
+
+    listwise_err_model = RankNet(input_size = input_size, output_size = 1).float().cuda()
+    listwise_err_model.load_state_dict(torch.load(listwise_err))
 
     # data.train is a DataFoldSplit
     print("data.train:", data.test)
-    ndcg_score = evaluate_model(model, data.test)
-    print('NDCG: ', ndcg_score)
+    ndcg_score = evaluate_model(pointwise_model, data.test)
+
+    print('pointwise')
+    print('Test NDCG:', evaluate_model(pointwise_model, data.test), 'validation NDCG:', evaluate_model(pointwise_model, data.validation))
+
+    print('pairwise slow')
+    print('Test NDCG:', evaluate_model(pairwise_model, data.test), 'validation NDCG:', evaluate_model(pairwise_model, data.validation,regression=True))
+
+    print('pairwise fast')
+    print('Test NDCG:', evaluate_model(pairwise_speed_model, data.test), 'validation NDCG:', evaluate_model(pairwise_speed_model, data.validation,regression=True))
+
+    print('listwise NDCG')
+    print('Test NDCG:', evaluate_model(listwise_score_model, data.test), 'validation NDCG:', evaluate_model(listwise_score_model, data.validation,regression=True))
+
+    print('listwise err')
+    print('Test NDCG:', evaluate_model(listwise_err_model, data.test), 'validation NDCG:', evaluate_model(listwise_err_model, data.validation,regression=True))

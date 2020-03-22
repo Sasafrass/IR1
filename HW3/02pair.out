@@ -1,0 +1,12 @@
+501
+data.train: <dataset.DataFoldSplit object at 0x7f5d8cf11250>
+data.train: 19943
+Split: train
+	Number of queries 19943
+Epoch:  1 NCDG:  0.739839666073739
+Epoch:  2 NCDG:  0.7392082757209261
+Epoch:  3 NCDG:  0.7389242137052964
+Epoch:  4 NCDG:  0.7385464258371327
+Epoch:  5 NCDG:  0.7384304339439466
+Epoch:  6 NCDG:  0.7383965940721623
+5e-05
