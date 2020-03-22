@@ -50,10 +50,10 @@
     * [ ] (Report) Performance on test set
   * [ ] **4 - Listwise LTR**
     * [x] Implementation of $\delta$ERR
-    * [ ] Implementation of $\delta$nDCG
+    * [x] Implementation of $\delta$nDCG
     * [x] Implementation of LambdaRank (IR Measure should be a hyperparameter)
     * [x] Function to train LambdaRank
-    * [ ] Function to evaluate LambdaRank
+    * [x] Function to evaluate LambdaRank
     * [ ] Hyperparameter search and early stopping using the validation set
     * [ ] (Report) Optimal hyperparameters for LambdaRank (using both ERR and
       NDCG)
