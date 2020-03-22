@@ -132,14 +132,14 @@ def calc_loss_sped_up(scores, qd_labels, sigma):
 
     return loss, ranking
 
-def validate_ndcg():
+def validate_ndcg(validation_set):
     with torch.no_grad():
 
         total_ndcg = 0
 
-        for i, qid in enumerate(np.arange(data.validation.num_queries())):
-            qd_feats = data.validation.query_feat(qid)
-            qd_labels = data.validation.query_labels(qid)
+        for i, qid in enumerate(np.arange(validation_set.num_queries())):
+            qd_feats = validation_set.query_feat(qid)
+            qd_labels = validation_set.query_labels(qid)
             scores = model.forward(torch.tensor(qd_feats).float().cuda())
 
             # Make em torchy?
@@ -160,9 +160,9 @@ def validate_ndcg():
             if len(scores) < 2:
                 continue
 
-            total_ndcg += evaluate_model(model, data.validation,regression=True)
+            total_ndcg += evaluate_model(model, validation_set,regression=True)
 
-        return total_ndcg / data.validation.num_queries()
+        return total_ndcg / validation_set.num_queries()
 
 if __name__ == "__main__":
 
