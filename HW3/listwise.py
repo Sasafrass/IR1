@@ -109,7 +109,7 @@ def run_epoch(model, optimizer, data, eval_every=10000, sigma=1, IRM='ndcg'):
 		overall_loss += rolling_avg
 		temp_loss += rolling_avg.item()
 
-		if (i+1) % validate_every == 0:
+		if (i+1) % eval_every == 0:
 			avg_ndcg = evaluate_model(model, data.validation,regression=True)
 			print("NCDG: ", avg_ndcg, 'Loss: ', temp_loss/-eval_every)
 			temp_loss = 0
