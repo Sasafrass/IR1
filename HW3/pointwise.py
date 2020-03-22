@@ -13,10 +13,11 @@ from models import RankNet
 from dataset import get_dataset, DataSet
 import ranking as rnk
 
-def run_epoch(model, optimizer, data):
+def run_epoch(model, optimizer, data, eval_every = 100):
 	total_loss = 0
 	total_acc = 0
-	for qid in np.arange(data.train.num_queries()):
+	temp_loss = 0
+	for i, qid in enumerate(np.arange(data.train.num_queries())):
 		optimizer.zero_grad()
 		qd_feats = data.train.query_feat(qid)
 		qd_labels = data.train.query_labels(qid)
@@ -28,8 +29,14 @@ def run_epoch(model, optimizer, data):
 		loss = F.cross_entropy(scores,labels)
 		loss.backward()
 		total_loss += loss.item()
+		temp_loss += loss.item()
 		total_acc += sum(corr)/len(prediction)
 		optimizer.step()
+
+		if (i+1) % eval_every == 0:
+			avg_ndcg = evaluate_model(model, data.validation,regression=False)
+			print('iteration', i+1, "NCDG: ", avg_ndcg, 'Loss: ', temp_loss/eval_every)
+			temp_loss = 0
 
 	print('loss: ', total_loss/data.train.num_queries(), 'Accuracy: ', total_acc/data.train.num_queries())
 
@@ -38,8 +45,9 @@ def run_epoch(model, optimizer, data):
 if __name__ == "__main__":
 
 	model_path = 'stored_models/pointwise_model.pth'
-	num_epochs = 100
+	num_epochs = 10
 	stop_threshold = 0.00001
+	learning_rate = 0.002
 
 	# Get data
 	dataset = get_dataset()
@@ -57,7 +65,7 @@ if __name__ == "__main__":
 
 	# Define model
 	model = RankNet(input_size = input_size, output_size = output_size).float().cuda()
-	optimizer = optim.Adam(model.parameters(), lr=0.002)
+	optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 	# Define what split we are using FOR THE MODEL SO TRAIN OR NOT
 	split = "train" #"validation", "test"
@@ -73,10 +81,8 @@ if __name__ == "__main__":
 		run_epoch(model, optimizer, data)
 		model.eval
 		ndcg_score = evaluate_model(model, data.validation)
-		print('NDCG: ', ndcg_score)
 
 		diff = abs(ndcg_score - prev_ndcg_score)
-		print(diff)
 		if ( diff < stop_threshold):
 			print('Early stopping')
 			break

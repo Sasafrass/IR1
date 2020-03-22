@@ -18,12 +18,13 @@ from datetime import datetime as time
 # Evaluate model import
 from pointwise_evaluation import evaluate_model
 
-def run_epoch(model, optimizer, data, validate_every=2500, sped_up=False, sigma=1):
-	
+def run_epoch(model, optimizer, data, eval_every=3000, sped_up=False, sigma=1):
+    
     # Parameters
     overall_loss = 0
     epoch_loss = 0
     
+    temp_loss = 0
     # Main Pairwise RankNet function
     for i, qid in enumerate(np.arange(data.train.num_queries())):
 
@@ -48,9 +49,14 @@ def run_epoch(model, optimizer, data, validate_every=2500, sped_up=False, sigma=
         # Keep track of rolling average
         overall_loss += loss / (len(ranking) ** 2)
 
-        if (i+1) % validate_every == 0:
-            avg_ndcg = evaluate_model(model, data.validation,regression=True)
-            print("NCDG: ", avg_ndcg)
+        temp_loss += loss
+
+        if (i+1) % eval_every == 0:
+            model.eval
+            avg_ndcg = evaluate_model(model, data.validation, regression=True)
+            print("Iteration: ", i+1,"NCDG: ", avg_ndcg, 'loss:',temp_loss.item()/eval_every)
+            model.train
+            temp_loss = 0
 
         # Update gradients
         loss.backward()
@@ -58,11 +64,7 @@ def run_epoch(model, optimizer, data, validate_every=2500, sped_up=False, sigma=
 
         #break
     
-    #
-    #print(ranking)
-
-    print(ranking)
-    print("epoch_loss: ", overall_loss / data.train.num_queries())
+    #print("epoch_loss: ", overall_loss / data.train.num_queries())
 
 	# TODO: Go over data.validation
 
@@ -164,38 +166,48 @@ def validate_ndcg(validation_set):
 
 if __name__ == "__main__":
 
-	model_path = 'stored_models/pairwise_model.pth'
+    model_path = 'stored_models/pairwise_model.pth'
+    eval_every= 1
+    num_epochs = 20
+    early_stopping = 0.00001
+    learning_rate = 0.0002
 
 	# Get data
-	dataset = get_dataset()
-	data = dataset.get_data_folds()[0]
-	print(data.num_features)
-	data.read_data()
+    dataset = get_dataset()
+    data = dataset.get_data_folds()[0]
+    print(data.num_features)
+    data.read_data()
 
-	# data.train is a DataFoldSplit
-	print("data.train:", data.train)
-	print("data.train:", data.train.num_queries())
+    # data.train is a DataFoldSplit
+    print("data.train:", data.train)
+    print("data.train:", data.train.num_queries())
 
-	# Parameters for model
-	input_size  = data.num_features
-	output_size = 1					# Output size is 1 because regression
+    # Parameters for model
+    input_size  = data.num_features
+    output_size = 1					# Output size is 1 because regression
 
-	# Define model
-	model = RankNet(input_size = input_size, output_size = output_size).float().cuda()
-	optimizer = optim.Adam(model.parameters())
+    # Define model
+    model = RankNet(input_size = input_size, output_size = output_size).float().cuda()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-	# Define what split we are using FOR THE MODEL SO TRAIN OR NOT
-	split = "train" #"validation", "test"
-	print(f"Split: {split}")
-	split = getattr(data, split)
-	print(f"\tNumber of queries {split.num_queries()}")
+    # Define what split we are using FOR THE MODEL SO TRAIN OR NOT
+    split = "train" #"validation", "test"
+    print(f"Split: {split}")
+    split = getattr(data, split)
+    print(f"\tNumber of queries {split.num_queries()}")
 
-	# Define number of epochs and run for that amount
-	num_epochs = 100
-	for i in range(num_epochs):
-		print("Epoch: ", i)
-		start = time.now()
-		run_epoch(model, optimizer, data, sped_up=True)
-		print("I'm done! This run lasted: " + str(time.now() - start))
+    prev_ndcg = 0
 
-	torch.save(model.state_dict(), model_path)
+    # Define number of epochs and run for that amount
+    for i in range(num_epochs):
+        run_epoch(model, optimizer, data, sped_up=True)
+        if (i+1) % eval_every == 0:
+            avg_ndcg = evaluate_model(model, data.validation, regression=True)
+            print("Epoch: ", i+1,"NCDG: ", avg_ndcg)
+
+            if (abs(prev_ndcg - avg_ndcg) < early_stopping):
+                print('early stopping')
+                print(early_stopping)
+                break
+            prev_ndcg = avg_ndcg
+    torch.save(model.state_dict(), model_path+'lr'+str(learning_rate)+'notspedupbad')

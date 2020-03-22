@@ -18,9 +18,10 @@ from datetime import datetime as time
 # Evaluate model import
 from pointwise_evaluation import evaluate_model
 
-def run_epoch(model, optimizer, data, validate_every=2500, sigma=1, IRM='ndcg'):
+def run_epoch(model, optimizer, data, eval_every=3000, sigma=1, IRM='ndcg'):
     
 	# Parameters
+	temp_loss = 0
 	overall_loss = 0
 	epoch_loss = 0
 
@@ -52,7 +53,6 @@ def run_epoch(model, optimizer, data, validate_every=2500, sigma=1, IRM='ndcg'):
 		if len(scores) < 2:
 			continue
 		loss = 0
-
 		# Vectorize the loss calculation
 		# Calculate all score differences
 		scorediff = scores_d - scores_d.T
@@ -98,12 +98,16 @@ def run_epoch(model, optimizer, data, validate_every=2500, sigma=1, IRM='ndcg'):
 		loss = scores.squeeze() * lambas_i
 		loss = loss.sum()
 
+
 		# Keep track of rolling average
-		overall_loss += loss / (len(ranking) ** 2)
+		rolling_avg = loss / (len(ranking) ** 2)
+		overall_loss += rolling_avg
+		temp_loss += rolling_avg.item()
 
 		if (i+1) % validate_every == 0:
 			avg_ndcg = evaluate_model(model, data.validation,regression=True)
-			print("NCDG: ", avg_ndcg)
+			print("NCDG: ", avg_ndcg, 'Loss: ', temp_loss/-eval_every)
+			temp_loss = 0
 
 		# Update gradients
 		loss.backward()
@@ -111,7 +115,6 @@ def run_epoch(model, optimizer, data, validate_every=2500, sigma=1, IRM='ndcg'):
 
 		#break
 
-	#
 	#print(ranking)
 
 	print(ranking)
@@ -178,6 +181,11 @@ def ndcg(ranking,ideal_ranking):
 
 if __name__ == "__main__":
 
+	model_path = 'stored_models/listwise_model'
+	learning_rate = 0.0002
+	early_stopping = 0.0001
+	num_epochs = 10
+
 	# Get data
 	dataset = get_dataset()
 	data = dataset.get_data_folds()[0]
@@ -194,7 +202,7 @@ if __name__ == "__main__":
 
 	# Define model
 	model = RankNet(input_size = input_size, output_size = output_size).float().cuda()
-	optimizer = optim.Adam(model.parameters())
+	optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 	# Define what split we are using FOR THE MODEL SO TRAIN OR NOT
 	split = "train" #"validation", "test"
@@ -203,10 +211,16 @@ if __name__ == "__main__":
 	print(f"\tNumber of queries {split.num_queries()}")
 
 	# Define number of epochs and run for that amount
-	num_epochs = 100
+	prev_ndcg = 0
 	for i in range(num_epochs):
 		print("Epoch: ", i)
 		start = time.now()
-		run_epoch(model, optimizer, data,IRM='ndcg')
-		print("I'm done! This run lasted: " + str(time.now() - start))
-		break
+		run_epoch(model, optimizer, data,IRM='err')
+		
+		avg_ndcg = evaluate_model(model, data.validation,regression=True)
+		if (abs(prev_ndcg - avg_ndcg) < early_stopping):
+			print('early stopping')
+			print(early_stopping)
+			break
+		prev_ndcg = avg_ndcg
+	torch.save(model.state_dict(), model_path+'err'+'.pth')
