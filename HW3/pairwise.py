@@ -17,12 +17,13 @@ import time
 # Evaluate model import
 from pointwise_evaluation import evaluate_model
 
-def run_epoch(model, optimizer, data, eval_every=100, sped_up=False, sigma=1):
+def run_epoch(model, optimizer, data, eval_every=3000, sped_up=False, sigma=1):
     
     # Parameters
     overall_loss = 0
     epoch_loss = 0
     
+    temp_loss = 0
     # Main Pairwise RankNet function
     for i, qid in enumerate(np.arange(data.train.num_queries())):
 
@@ -47,11 +48,14 @@ def run_epoch(model, optimizer, data, eval_every=100, sped_up=False, sigma=1):
         # Keep track of rolling average
         overall_loss += loss / (len(ranking) ** 2)
 
+        temp_loss += loss
+
         if (i+1) % eval_every == 0:
             model.eval
             avg_ndcg = evaluate_model(model, data.validation, regression=True)
-            print("Iteration: ", i+1,"NCDG: ", avg_ndcg)
+            print("Iteration: ", i+1,"NCDG: ", avg_ndcg, 'loss:',temp_loss.item()/eval_every)
             model.train
+            temp_loss = 0
 
         # Update gradients
         loss.backward()
@@ -155,7 +159,7 @@ def validate_ndcg():
             if len(scores) < 2:
                 continue
 
-            total_ndcg += evaluate_model(model, data.validation)
+            total_ndcg += evaluate_model(model, data.validation,regression=True)
 
         return total_ndcg / data.validation.num_queries()
 
@@ -163,7 +167,7 @@ if __name__ == "__main__":
 
     model_path = 'stored_models/pairwise_model.pth'
     eval_every= 1
-    num_epochs = 100
+    num_epochs = 20
     early_stopping = 0.00001
     learning_rate = 0.0002
 
@@ -195,7 +199,7 @@ if __name__ == "__main__":
 
     # Define number of epochs and run for that amount
     for i in range(num_epochs):
-        run_epoch(model, optimizer, data, sped_up=True)
+        run_epoch(model, optimizer, data, sped_up=False)
         if (i+1) % eval_every == 0:
             avg_ndcg = evaluate_model(model, data.validation, regression=True)
             print("Epoch: ", i+1,"NCDG: ", avg_ndcg)
@@ -205,4 +209,4 @@ if __name__ == "__main__":
                 print(early_stopping)
                 break
             prev_ndcg = avg_ndcg
-    torch.save(model.state_dict(), model_path+'lr'+str(learning_rate))
+    torch.save(model.state_dict(), model_path+'lr'+str(learning_rate)+'notspedup')
