@@ -6,6 +6,9 @@
 
 * [x] Make LaTeX file 
   * [x] Albert
+* [ ] Implementation Details Pointwise
+* [ ] Implementation Details Pairwise
+* [ ] Implementation Details LambdaRank
 * [x] **Theory Questions:** 
   * [x] Theory Question 1.1
   * [x] Theory Question 1.2
@@ -27,7 +30,6 @@
   * [ ] **4 - Listwise LTR**
     * [ ] Analysis Question 4.1
     * [ ] Analysis Question 4.2
-
 * [ ] **Programming**
   * [x] **2 - Pointwise - LTR**
     * [x] Training a pointwise model
@@ -48,10 +50,10 @@
     * [ ] (Report) Performance on test set
   * [ ] **4 - Listwise LTR**
     * [x] Implementation of $\delta$ERR
-    * [ ] Implementation of $\delta$nDCG
+    * [x] Implementation of $\delta$nDCG
     * [x] Implementation of LambdaRank (IR Measure should be a hyperparameter)
     * [x] Function to train LambdaRank
-    * [ ] Function to evaluate LambdaRank
+    * [x] Function to evaluate LambdaRank
     * [ ] Hyperparameter search and early stopping using the validation set
     * [ ] (Report) Optimal hyperparameters for LambdaRank (using both ERR and
       NDCG)

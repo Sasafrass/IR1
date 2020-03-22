@@ -13,6 +13,7 @@ import ranking as rnk
 
 # Time functions
 import time
+from datetime import datetime as time
 
 # Evaluate model import
 from pointwise_evaluation import evaluate_model
@@ -199,7 +200,7 @@ if __name__ == "__main__":
 
     # Define number of epochs and run for that amount
     for i in range(num_epochs):
-        run_epoch(model, optimizer, data, sped_up=False)
+        run_epoch(model, optimizer, data, sped_up=True)
         if (i+1) % eval_every == 0:
             avg_ndcg = evaluate_model(model, data.validation, regression=True)
             print("Epoch: ", i+1,"NCDG: ", avg_ndcg)
@@ -209,4 +210,4 @@ if __name__ == "__main__":
                 print(early_stopping)
                 break
             prev_ndcg = avg_ndcg
-    torch.save(model.state_dict(), model_path+'lr'+str(learning_rate)+'notspedup')
+    torch.save(model.state_dict(), model_path+'lr'+str(learning_rate)+'notspedupbad')
