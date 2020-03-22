@@ -18,7 +18,7 @@ from datetime import datetime as time
 # Evaluate model import
 from pointwise_evaluation import evaluate_model
 
-def run_epoch(model, optimizer, data, eval_every=3000, sigma=1, IRM='ndcg'):
+def run_epoch(model, optimizer, data, eval_every=10000, sigma=1, IRM='ndcg'):
     
 	# Parameters
 	temp_loss = 0
@@ -63,14 +63,17 @@ def run_epoch(model, optimizer, data, eval_every=3000, sigma=1, IRM='ndcg'):
 
 		# Loss is just vectorized formula
 		lambdas_ij = sigma * ((1 / 2) * (1 - scorediff) - (1 / (1 + torch.exp(sigma * scorediff))))
-
-		# Calculate the delta IRM
+    
+		# Get labels and get ranking
 		np_labels = qd_labels.cpu().numpy()
 		np_ranking = ranking.cpu().numpy()
+
+		# Initialize permutations list and add initial permutation
 		pred_perms = []
 		sorted_pred = np.array([np_labels[idx] for idx in np_ranking])
 		pred_perms.append(sorted_pred)
 
+		# Add all vectors of possible permutations to the list
 		for p in range(len(sorted_pred)):
 			for q in range(p+1, len(sorted_pred)):
 				perm_pred = sorted_pred.copy()
@@ -80,18 +83,20 @@ def run_epoch(model, optimizer, data, eval_every=3000, sigma=1, IRM='ndcg'):
 				pred_perms.append(perm_pred)
 		pred_perms = np.array(pred_perms)
 
+		# Check correct IRM and calculate the scores for each permutation
 		if(IRM == 'err'):
 			ranking_measure = err(pred_perms)
 		elif(IRM == 'ndcg'):
 			label_rank = np.sort(np_labels)[::-1]
 			ranking_measure = ndcg(pred_perms,label_rank)
 
+		# Calculate all deltas for the IRM
 		deltas = np.abs(ranking_measure[0] - ranking_measure[1:])
 		delta_irm = np.zeros((len(ranking), len(ranking)))
 		delta_irm[np.triu_indices(len(ranking), 1)] = deltas
-		delta_irm = torch.from_numpy(delta_irm + delta_irm.T).float().cuda()
+		delta_irm = torch.from_numpy(delta_irm - delta_irm.T).float().cuda()
 
-		# Calculate the loss
+		# Get the lambdas and multiply with the delta irm values
 
 		lambdas_ij = lambdas_ij * delta_irm
 		lambas_i = lambdas_ij.sum(dim=1)
@@ -118,6 +123,7 @@ def run_epoch(model, optimizer, data, eval_every=3000, sigma=1, IRM='ndcg'):
 	#print(ranking)
 
 	print(ranking)
+	print("NDCG: ", evaluate_model(model, data.validation,regression=True))
 	print("epoch_loss: ", overall_loss / data.train.num_queries())
 
 	# TODO: Go over data.validation
@@ -215,6 +221,7 @@ if __name__ == "__main__":
 	for i in range(num_epochs):
 		print("Epoch: ", i)
 		start = time.now()
+    
 		run_epoch(model, optimizer, data,IRM='err')
 		
 		avg_ndcg = evaluate_model(model, data.validation,regression=True)
